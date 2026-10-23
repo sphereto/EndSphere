@@ -40,4 +40,4 @@ Released under the MIT license. See [LICENSE](LICENSE).
 
 ## Releases
 
-Versions follow [Semantic Versioning](https://semver.org/) and every change is recorded in [CHANGELOG.md](CHANGELOG.md). To release: move the `Unreleased` notes under a new version heading, bump `version` in `package.json`, commit, then `git tag vX.Y.Z && git push --tags`. The Release workflow publishes a GitHub Release using that changelog section, and the Deploy workflow publishes the site to GitHub Pages.
+Versions follow [Semantic Versioning](https://semver.org/) and every change is recorded in [CHANGELOG.md](CHANGELOG.md). To release: move the `Unreleased` notes under a new version heading in `CHANGELOG.md`, bump `version` in `package.json`, and merge to `main`. Then open the Actions tab, choose **Release**, click **Run workflow**, enter the version tag (e.g. `v0.2.0`) and the commit SHA or branch to release. The workflow creates the tag at that commit and publishes a GitHub Release using that changelog section. The Deploy workflow publishes the site to GitHub Pages on every push to `main`.

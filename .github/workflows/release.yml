@@ -1,8 +1,17 @@
 name: Release
 
 on:
-  push:
-    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to create, e.g. v0.2.0'
+        required: true
+        type: string
+      commit:
+        description: 'Commit SHA, branch or tag to release'
+        required: true
+        default: main
+        type: string
 
 permissions:
   contents: write
@@ -12,11 +21,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Publish GitHub Release from CHANGELOG
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+
+      - name: Create tag and GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
         run: |
-          v="${GITHUB_REF_NAME#v}"
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Version must look like v1.2.3 (or v1.2.3-beta.1)"; exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag $VERSION already exists"; exit 1
+          fi
+          sha="$(git rev-parse HEAD)"
+          v="${VERSION#v}"
+          # Release notes = this version's section of CHANGELOG.md (as of the chosen commit).
           awk -v v="$v" 'index($0, "## [" v "]") == 1 {f=1; next} /^## /{f=0} f' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "See CHANGELOG.md" > notes.md
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md
+          flags=()
+          [[ "$VERSION" == *-* ]] && flags+=(--prerelease)
+          gh release create "$VERSION" --target "$sha" --title "$VERSION" --notes-file notes.md "${flags[@]}"
+          echo "Released $VERSION at $sha" >> "$GITHUB_STEP_SUMMARY"
