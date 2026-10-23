@@ -33,3 +33,11 @@ npm run lint && npm run build
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes.
+
+## License
+
+Released under the MIT license. See [LICENSE](LICENSE).
+
+## Releases
+
+Versions follow [Semantic Versioning](https://semver.org/) and every change is recorded in [CHANGELOG.md](CHANGELOG.md). To release: move the `Unreleased` notes under a new version heading, bump `version` in `package.json`, commit, then `git tag vX.Y.Z && git push --tags`. The Release workflow publishes a GitHub Release using that changelog section, and the Deploy workflow publishes the site to GitHub Pages.

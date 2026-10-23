@@ -14,7 +14,7 @@ export const plugins: Plugin[] = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 
   lang: i % 2 === 0 ? 'C++' : 'Python',
   tagline: '[One-line tagline]',
   version: 'v0.0.0',
-  repo: `https://github.com/OWNER/${name.toLowerCase()}`,
+  repo: `https://github.com/sphereto/${name.toLowerCase()}`,
 }))
 
 export const letterOf = (p: Plugin): string => p.name.charAt(0).toUpperCase()

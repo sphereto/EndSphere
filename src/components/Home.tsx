@@ -7,7 +7,7 @@ const FAQ: ReadonlyArray<readonly [string, string]> = [
   ['Where do downloads come from?', 'Straight from each plugin’s GitHub releases. EndSphere only previews them, so you always get the newest version.'],
   ['Which Endstone versions are supported?', 'Each release says which version it targets. Check the plugin’s page before updating your server.'],
   ['I found a bug. What now?', 'Open an issue on that plugin’s GitHub repository.'],
-  ['How can I get in touch?', '[CONTACT CHANNEL — e.g. Discord handle or GitHub discussions link]'],
+  ['How can I get in touch?', 'Message @sphereto on Discord, or open an issue on GitHub.'],
 ]
 
 const Heading = ({ title, sub }: { title: string; sub: string }) => (
@@ -78,7 +78,7 @@ export default function Home() {
         <div className="w">
           <div className="fc">
             <div><span className="mo">Navigate</span><a href="#home">Home</a><a href="#about">About</a><a href="#faq">FAQ</a><a href="#browse">Browse</a></div>
-            <div><span className="mo">Elsewhere</span><a href="https://github.com/OWNER">GitHub</a><a href="#faq">[Contact]</a></div>
+            <div><span className="mo">Elsewhere</span><a href="https://github.com/sphereto">GitHub</a><a href="#faq">Discord: @sphereto</a></div>
             <div><span className="mo">Stack</span><span>Endstone</span><span>C++ · Python</span></div>
             <div><span className="mo">Legal</span><span>Not affiliated with Mojang or Microsoft.</span></div>
           </div>
