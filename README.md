@@ -2,7 +2,7 @@
 
 A free storefront for Endstone plugins: browse and preview them, then download the latest release straight from GitHub.
 
-Built with React, TypeScript (strict) and Vite. The hero uses a 2D-canvas dotted sphere; the WebGL scene in `src/webgl/scene.ts` is a stub (TODO).
+Built with React, TypeScript (strict) and Vite. The WebGL scene in `src/webgl/scene.ts` is a stub (TODO) and is not rendered yet.
 
 ## Getting started
 
@@ -24,7 +24,7 @@ npm run build    # type-check and build to dist/
 npm run preview  # serve the production build
 ```
 
-Plugin data lives in `src/data/plugins.ts` (currently placeholders). Routing is hash-based (`#browse`), so the built site works on GitHub Pages without extra config; set `BASE_PATH=/<repo>/` when building for a project page.
+Plugin data lives in `src/data/plugins.ts` (currently placeholders). Pages use real paths: `/EndSphere/` (Home; About and FAQ are sections the menu scrolls to) and `/EndSphere/browse/`. The build emits a real `browse/index.html` and a `404.html` fallback, so deep links work on GitHub Pages. The base path defaults to `/EndSphere/`; set `BASE_PATH` to change it (`/` for a `<user>.github.io` repo).
 
 ## Development
 

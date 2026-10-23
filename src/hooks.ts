@@ -1,14 +1,6 @@
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect } from 'react'
 
-const subscribe = (cb: () => void) => {
-  addEventListener('hashchange', cb)
-  return () => removeEventListener('hashchange', cb)
-}
-
-/** Current location.hash (e.g. "#browse"). Hash routing keeps GitHub Pages happy with no 404 fallback. */
-export const useHash = (): string => useSyncExternalStore(subscribe, () => location.hash)
-
-/** Fades in every `.rv` element as it enters the viewport. Re-runs when `key` changes (route switch). */
+/** Fades in every `.rv` element as it enters the viewport. Re-runs when `key` changes (page switch). */
 export function useReveal(key: unknown): void {
   useEffect(() => {
     const io = new IntersectionObserver(

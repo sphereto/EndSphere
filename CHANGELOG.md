@@ -5,6 +5,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- Browse now lives at a real path (`/EndSphere/browse/`) instead of a `#hash`; the build pre-renders it with its own page title.
+- Smaller hero title and subtitle; the logo is plain "EndSphere".
+- The hero is now just the title and subtitle, bottom-left.
+
+### Fixed
+- Tap targets under 44px (logo, footer, version and Download links).
+- Hover colours sticking on touch screens; added visible keyboard focus.
+- Layout shift when the menu locks scrolling; the menu now fades and no longer scrolls the page behind it.
+- Extra scroll height from safe-area padding on iOS; safe areas now handled per element, including landscape.
+- A–Z strip wrapping into five rows on phones; it scrolls sideways instead.
+
+### Removed
+- The dotted-sphere hero animation.
+
 ## [0.1.0] - 2026-10-23
 
 ### Added

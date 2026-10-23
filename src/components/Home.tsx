@@ -1,5 +1,5 @@
 import { plugins } from '../data/plugins'
-import HeroScene from './HeroScene'
+import { NavLink } from '../router'
 
 const FAQ: ReadonlyArray<readonly [string, string]> = [
   ['How do I install a plugin?', 'Download the latest release from the plugin’s GitHub page and drop it into your server’s plugins folder, then restart. Each README has the exact steps.'],
@@ -21,7 +21,6 @@ export default function Home() {
   return (
     <main id="home">
       <section className="hero">
-        <HeroScene />
         <div className="w">
           <h1>EndSphere.</h1>
           <div className="sub"><i />Free plugins for Endstone servers.</div>
@@ -36,11 +35,11 @@ export default function Home() {
               <div className="row" key={p.name}>
                 <span className="mo">0{i + 1}</span>
                 <span>{p.name}<small>{p.tagline}</small></span>
-                <a href="#browse" className="mo">{p.version} ↗</a>
+                <NavLink to="browse" className="mo">{p.version} ↗</NavLink>
               </div>
             ))}
           </div>
-          <div className="cta rv"><a href="#browse" className="btn">Browse all plugins →</a></div>
+          <div className="cta rv"><NavLink to="browse" className="btn">Browse all plugins →</NavLink></div>
         </div>
       </section>
 
@@ -70,15 +69,15 @@ export default function Home() {
       <section className="close">
         <div className="w">
           <h2 className="rv">Run your <em>server</em> your way.</h2>
-          <a href="#browse" className="btn">Browse plugins</a>
+          <NavLink to="browse" className="btn">Browse plugins</NavLink>
         </div>
       </section>
 
       <footer className="ftr">
         <div className="w">
           <div className="fc">
-            <div><span className="mo">Navigate</span><a href="#home">Home</a><a href="#about">About</a><a href="#faq">FAQ</a><a href="#browse">Browse</a></div>
-            <div><span className="mo">Elsewhere</span><a href="https://github.com/sphereto">GitHub</a><a href="#faq">Discord: @sphereto</a></div>
+            <div><span className="mo">Navigate</span><NavLink to="home">Home</NavLink><NavLink to="home" section="about">About</NavLink><NavLink to="home" section="faq">FAQ</NavLink><NavLink to="browse">Browse</NavLink></div>
+            <div><span className="mo">Elsewhere</span><a href="https://github.com/sphereto">GitHub</a><NavLink to="home" section="faq">Discord: @sphereto</NavLink></div>
             <div><span className="mo">Stack</span><span>Endstone</span><span>C++ · Python</span></div>
             <div><span className="mo">Legal</span><span>Not affiliated with Mojang or Microsoft.</span></div>
           </div>

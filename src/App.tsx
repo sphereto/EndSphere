@@ -1,21 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Browse from './components/Browse'
 import Header from './components/Header'
 import Home from './components/Home'
-import { useHash, useReveal } from './hooks'
+import { useReveal } from './hooks'
+import { scrollToSection, takePendingSection, useRoute } from './router'
 
 export default function App() {
-  const hash = useHash()
-  const browse = hash === '#browse'
+  const route = useRoute()
   const [menu, setMenu] = useState(false)
+  const first = useRef(true)
 
   useEffect(() => {
     setMenu(false)
-    document.title = browse ? 'Browse — EndSphere' : 'EndSphere — Free Endstone plugins'
-    const el = !browse && hash.length > 1 ? document.getElementById(hash.slice(1)) : null
-    if (el) el.scrollIntoView()
+    document.title = route === 'browse' ? 'Browse — EndSphere' : 'EndSphere — Free Endstone plugins'
+    if (first.current) {
+      first.current = false // keep the browser's own scroll restoration on load/refresh
+      return
+    }
+    const section = takePendingSection()
+    if (section) requestAnimationFrame(() => scrollToSection(section))
     else scrollTo(0, 0)
-  }, [hash, browse])
+  }, [route])
 
   useEffect(() => {
     document.body.style.overflow = menu ? 'hidden' : ''
@@ -24,12 +29,12 @@ export default function App() {
     return () => removeEventListener('keydown', onKey)
   }, [menu])
 
-  useReveal(browse)
+  useReveal(route)
 
   return (
     <>
-      <Header open={menu} onToggle={() => setMenu((m) => !m)} />
-      {browse ? <Browse /> : <Home />}
+      <Header open={menu} onToggle={() => setMenu((m) => !m)} onClose={() => setMenu(false)} />
+      {route === 'browse' ? <Browse /> : <Home />}
     </>
   )
 }

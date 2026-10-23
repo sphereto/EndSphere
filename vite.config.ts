@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// BASE_PATH lets GitHub Pages serve from /<repo>/ (e.g. BASE_PATH=/endsphere/).
+// GitHub Pages project sites are served from /<repo>/. Override with BASE_PATH (use '/' for a <user>.github.io repo).
 export default defineConfig({
-  base: process.env.BASE_PATH ?? '/',
+  base: process.env.BASE_PATH ?? '/EndSphere/',
   plugins: [react()],
 })
