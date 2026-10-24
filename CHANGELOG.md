@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- A shape per section: elongated square bipyramid (Plugins), astroidal ellipsoid (About, tilts toward the pointer, no spin), and a 3D letter E (closing section, tilts toward the pointer, no spin). Dots scatter into the endstone pattern between shapes.
+- Procedural clouds over the FAQ: they rise over the dots, the FAQ sits on a light page with dark text, and they recede before the closing section. The header and text colours adapt automatically.
+- Desktop layout puts section text on the left and the shape on the right; on phones the shape sits behind the text, dimmed.
 - WebGL2 dot field on Home: about 1,000 white dots (600 on phones) forming a wireframe cube. Each dot has its own drift, spring and scroll inertia; the pointer pushes dots away and they return, with mouse parallax.
 - Scrolling scatters the dots into the endstone texture pattern (patches dense, cracks empty) and they reform into the cube when you scroll back up.
 - Reduced-motion fallback (still frame) and graceful skip without WebGL2.
@@ -21,6 +24,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Layout shift when the menu locks scrolling; the menu now fades and no longer scrolls the page behind it.
 - Extra scroll height from safe-area padding on iOS; safe areas now handled per element, including landscape.
 - A–Z strip wrapping into five rows on phones; it scrolls sideways instead.
+
+### Fixed (dots)
+- Scrollbar gutter no longer shows a dark strip while the cloud covers the page.
 
 ### Removed
 - The earlier 2D dotted-sphere hero animation.

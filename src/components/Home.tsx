@@ -29,7 +29,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="sec" id="plugins">
+      <section className="sec side" id="plugins">
         <div className="w">
           <Heading title="Plugins." sub="the library" />
           <div className="rv">
@@ -45,7 +45,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="sec" id="about">
+      <section className="sec side" id="about">
         <div className="big" aria-hidden="true">ENDSPHERE</div>
         <div className="w">
           <Heading title="About." sub="what this is" />
@@ -68,7 +68,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="close">
+      <section className="close side" id="closing">
         <div className="w">
           <h2 className="rv">Run your <em>server</em> your way.</h2>
           <NavLink to="browse" className="btn">Browse plugins</NavLink>

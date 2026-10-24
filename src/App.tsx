@@ -24,6 +24,7 @@ export default function App() {
 
   useEffect(() => {
     document.body.style.overflow = menu ? 'hidden' : ''
+    document.body.classList.toggle('menu-open', menu)
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenu(false)
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
