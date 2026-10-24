@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Browse from './components/Browse'
 import Header from './components/Header'
 import Home from './components/Home'
+import NotFound from './components/NotFound'
 import { useReveal } from './hooks'
 import { scrollToSection, takePendingSection, useRoute } from './router'
 
@@ -12,7 +13,7 @@ export default function App() {
 
   useEffect(() => {
     setMenu(false)
-    document.title = route === 'browse' ? 'Browse — EndSphere' : 'EndSphere — Free Endstone plugins'
+    document.title = route === 'browse' ? 'Browse — EndSphere' : route === 'notfound' ? 'Not found — EndSphere' : 'EndSphere — Free Endstone plugins'
     if (first.current) {
       first.current = false // keep the browser's own scroll restoration on load/refresh
       return
@@ -35,7 +36,7 @@ export default function App() {
   return (
     <>
       <Header open={menu} onToggle={() => setMenu((m) => !m)} onClose={() => setMenu(false)} />
-      {route === 'browse' ? <Browse /> : <Home />}
+      {route === 'browse' ? <Browse /> : route === 'notfound' ? <NotFound /> : <Home />}
     </>
   )
 }

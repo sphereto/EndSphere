@@ -5,7 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-24
+
 ### Added
+- Glowing dots: a tiny shader gives every dot a bright core and soft halo, far dots lean violet, near dots stay white, with a gentle twinkle. Dots and shapes are about 40% bigger.
+- Quiet zones: dots fade behind text blocks, and text gets a soft dark halo, so copy stays readable while the shapes stay visible.
+- The cloud now leaves through the top of the screen (the opposite of how it enters).
+- Adaptive quality (sheds dots on slow devices), GPU context-loss recovery, and a dynamic browser theme colour that follows the cloud.
+- Self-hosted fonts, share-preview tags with an image, a real 404 page, and an empty state on Browse.
 - A shape per section: elongated square bipyramid (Plugins), astroidal ellipsoid (About, tilts toward the pointer, no spin), and a 3D letter E (closing section, tilts toward the pointer, no spin). Dots scatter into the endstone pattern between shapes.
 - Procedural clouds over the FAQ: they rise over the dots, the FAQ sits on a light page with dark text, and they recede before the closing section. The header and text colours adapt automatically.
 - Desktop layout puts section text on the left and the shape on the right; on phones the shape sits behind the text, dimmed.
@@ -40,5 +47,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Burger menu, weak scroll snapping and a footer that slides over the pinned closing screen.
 - Repo standards: README, MIT license, CI, Dependabot, issue and PR templates, CONTRIBUTING, SECURITY, CODEOWNERS.
 
-[Unreleased]: https://github.com/sphereto/endsphere/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/sphereto/endsphere/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/sphereto/endsphere/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sphereto/endsphere/releases/tag/v0.1.0

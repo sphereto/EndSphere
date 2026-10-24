@@ -1,6 +1,6 @@
 import { useSyncExternalStore, type MouseEvent, type ReactNode } from 'react'
 
-export type Route = 'home' | 'browse'
+export type Route = 'home' | 'browse' | 'notfound'
 
 /** e.g. "/EndSphere/" (from vite `base`). */
 export const BASE = import.meta.env.BASE_URL
@@ -15,7 +15,8 @@ const subscribe = (cb: () => void) => {
 
 const getRoute = (): Route => {
   const path = location.pathname.startsWith(BASE) ? location.pathname.slice(BASE.length) : location.pathname.slice(1)
-  return path.replace(/\/+$/, '') === 'browse' ? 'browse' : 'home'
+  const clean = path.replace(/\/+$/, '')
+  return clean === '' || clean === 'index.html' ? 'home' : clean === 'browse' ? 'browse' : 'notfound'
 }
 
 export const useRoute = (): Route => useSyncExternalStore(subscribe, getRoute)

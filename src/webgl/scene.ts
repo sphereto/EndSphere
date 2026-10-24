@@ -23,20 +23,29 @@ interface Dot {
   type: 0 | 1 | 2 | 3 // 0 orbit, 1 bob, 2 lissajous, 3 depth sway
   delay: number // 0..1, when this dot leaves/arrives during a transition
   inertia: number // how strongly scroll velocity throws this dot
+  sv: number // size variation
   sx: number; sy: number // last screen position (for the pointer)
 }
 
 const DOT_VS = `#version 300 es
-in vec4 a; uniform vec2 u_res; out float v_a;
-void main(){ vec2 c = a.xy / u_res * 2.0 - 1.0; gl_Position = vec4(c.x, -c.y, 0.0, 1.0); gl_PointSize = a.z; v_a = a.w; }`
+in vec4 a; in float b; uniform vec2 u_res; out float v_a; out float v_d;
+void main(){ vec2 c = a.xy / u_res * 2.0 - 1.0; gl_Position = vec4(c.x, -c.y, 0.0, 1.0); gl_PointSize = a.z; v_a = a.w; v_d = b; }`
+// Each dot is a glowing sprite: crisp bright core + soft halo. Far dots lean violet, near dots stay white.
 const DOT_FS = `#version 300 es
-precision mediump float; in float v_a; out vec4 o;
-void main(){ float r = length(gl_PointCoord - 0.5); float m = smoothstep(0.5, 0.38, r) * v_a; o = vec4(vec3(m), m); }`
+precision mediump float; in float v_a; in float v_d; out vec4 o;
+void main(){
+  float r = length(gl_PointCoord - 0.5) * 2.0;
+  float core = smoothstep(0.34, 0.12, r);
+  float glow = exp(-r * r * 4.5) * 0.6;
+  float i = clamp((core + glow) * v_a, 0.0, 1.0) * step(r, 1.0);
+  vec3 col = mix(mix(vec3(0.70, 0.60, 1.0), vec3(1.0), v_d), vec3(1.0), core);
+  o = vec4(col * i, i);
+}`
 
 const CLOUD_VS = `#version 300 es
 void main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`
 const CLOUD_FS = `#version 300 es
-precision highp float; out vec4 o; uniform vec2 u_res; uniform float u_t, u_cov;
+precision highp float; out vec4 o; uniform vec2 u_res; uniform float u_t, u_in, u_out;
 float h(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + 1.0), f.x), f.y); }
@@ -46,8 +55,10 @@ void main(){
   vec2 p = vec2(uv.x * asp, uv.y) * 2.2; float t = u_t * 0.04;
   float n1 = fbm(p + vec2(t, 0.0)); float n2 = fbm(p * 2.1 - vec2(0.0, t * 1.3) + n1);
   float shape = n1 * 0.65 + n2 * 0.35;
-  float edge = mix(-0.45, 1.75, u_cov);
-  float d = edge + (shape - 0.5) * 0.9 - uv.y;
+  float shapeLo = n2 * 0.65 + n1 * 0.35;
+  float eHi = mix(-0.45, 1.75, u_in);  // top edge rises from below the screen (enter)
+  float eLo = mix(-1.0, 2.3, u_out);   // bottom edge then rises past the top (exit)
+  float d = min(eHi + (shape - 0.5) * 0.9 - uv.y, uv.y - (eLo + (shapeLo - 0.5) * 0.9));
   float a = smoothstep(0.0, 0.16, d);
   vec3 col = mix(vec3(0.78, 0.78, 0.83), vec3(0.93, 0.93, 0.94), smoothstep(0.2, 0.8, shape));
   col = mix(col, vec3(0.90), smoothstep(0.1, 0.5, d));
@@ -100,7 +111,7 @@ function edgeDots(edges: Edge[], n: number): V3[] {
   edges.forEach(([a, b], i) => {
     const cnt = Math.max(1, Math.round((n * (lens[i] ?? 0)) / total))
     for (let k = 0; k < cnt; k++) {
-      const t = (k + Math.random() * 0.7) / cnt
+      const t = (k + 0.5 + (Math.random() - 0.5) * 0.5) / cnt
       out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t])
     }
   })
@@ -161,9 +172,12 @@ function astroidDots(n: number): V3[] {
 
 function buildDots(n: number): Dot[] {
   const cells: Array<[number, number]> = []
+  const on = (i: number, j: number) => ENDSTONE_MASK[j]?.charAt(i) === '1'
   ENDSTONE_MASK.forEach((row, j) => {
-    for (let i = 0; i < row.length; i++) if (row.charAt(i) === '1') cells.push([i, j])
+    // erode the patches by one cell so the cracks between them read as empty
+    for (let i = 0; i < row.length; i++) if (on(i, j) && on(i - 1, j) && on(i + 1, j) && on(i, j - 1) && on(i, j + 1)) cells.push([i, j])
   })
+  if (cells.length < 80) ENDSTONE_MASK.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (on(i, j)) cells.push([i, j]) })
   const shapes = [edgeDots(cubeEdges(), n), edgeDots(bipyramidEdges(), n), astroidDots(n), edgeDots(letterEEdges(), n)]
   const dots: Dot[] = []
   for (let i = 0; i < n; i++) {
@@ -174,7 +188,7 @@ function buildDots(n: number): Dot[] {
       x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
       k: rand(16, 40), c: rand(4, 8), amp: rand(1.5, 7), w: rand(0.4, 1.4),
       ph: rand(0, 6.283), ph2: rand(0, 6.283), type: (i % 4) as 0 | 1 | 2 | 3,
-      delay: Math.random(), inertia: rand(0.2, 1), sx: 0, sy: 0,
+      delay: Math.random(), inertia: rand(0.2, 1), sv: rand(0.8, 1.25), sx: 0, sy: 0,
     })
   }
   return dots
@@ -219,7 +233,9 @@ const INK_ON: V3 = [242, 241, 238], INK_OFF: V3 = [17, 17, 22]
 const MUT_ON: V3 = [201, 200, 196], MUT_OFF: V3 = [70, 70, 78]
 const LN_ON: V3 = [35, 35, 38], LN_OFF: V3 = [190, 190, 196]
 const mix = (a: V3, b: V3, t: number) => `rgb(${Math.round(lerp(a[0], b[0], t))},${Math.round(lerp(a[1], b[1], t))},${Math.round(lerp(a[2], b[2], t))})`
-const CSS_VARS = ['--cov', '--page', '--ink', '--ink-mut', '--ink-ln', '--ink-dim', '--ink-inv', '--hdr']
+const CSS_VARS = ['--cov', '--top', '--page', '--ink', '--ink-mut', '--ink-ln', '--hdr', '--cl-ink', '--cl-dim', '--cl-inv', '--halo']
+const BRIGHT = [1, 0.8, 0.8, 1] // cube and E at full strength, mid-section shapes quieter
+const QUIET = '.hero h1, .sub, .hd2 h2, .hd2 p, .row, .ab > div, .cta, .close h2, .close .btn'
 const PAGE_DARK: V3 = [10, 10, 11], PAGE_LIGHT: V3 = [230, 230, 232]
 
 /** WebGL2 dot field: shapes per section, scatter between them, procedural clouds over the FAQ. */
@@ -236,47 +252,65 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
   const dotRes = gl.getUniformLocation(dotProg, 'u_res')
   const cloudRes = gl.getUniformLocation(cloudProg, 'u_res')
   const cloudT = gl.getUniformLocation(cloudProg, 'u_t')
-  const cloudCov = gl.getUniformLocation(cloudProg, 'u_cov')
+  const cloudIn = gl.getUniformLocation(cloudProg, 'u_in')
+  const cloudOut = gl.getUniformLocation(cloudProg, 'u_out')
   const loc = gl.getAttribLocation(dotProg, 'a')
+  const locB = gl.getAttribLocation(dotProg, 'b')
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
   const dots = buildDots(innerWidth < 720 ? 600 : 1000)
-  const out = new Float32Array(dots.length * 4)
+  const out = new Float32Array(dots.length * 5)
   const els = SECTION_IDS.map((id) => document.getElementById(id))
   const root = document.documentElement
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  const quiet = Array.from(document.querySelectorAll<HTMLElement>(QUIET))
+  const minActive = Math.floor(dots.length * 0.4)
 
   gl.bindVertexArray(dotVao)
   gl.bindBuffer(gl.ARRAY_BUFFER, buf)
   gl.bufferData(gl.ARRAY_BUFFER, out.byteLength, gl.DYNAMIC_DRAW)
   gl.enableVertexAttribArray(loc)
-  gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 0, 0)
+  gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 20, 0)
+  gl.enableVertexAttribArray(locB)
+  gl.vertexAttribPointer(locB, 1, gl.FLOAT, false, 20, 16)
   gl.bindVertexArray(null)
   gl.enable(gl.BLEND)
-  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
-  let w = 1, h = 1, D = 1, raf = 0, last = 0, lastScroll = scrollY, lastCov = -1
+  let active = dots.length, accDt = 0, frames = 0
+  let w = 0, h = 1, D = 1, raf = 0, last = 0, lastScroll = scrollY, lastKey = ''
   let mx = 0, my = 0, tmx = 0, tmy = 0, px = -9999, py = -9999, touching = false
 
   const resize = () => {
-    D = Math.min(devicePixelRatio || 1, 2)
-    w = canvas.clientWidth
-    h = canvas.clientHeight
+    const nd = Math.min(devicePixelRatio || 1, innerWidth < 720 ? 1.75 : 2)
+    const nw = canvas.clientWidth, nh = canvas.clientHeight
+    if (nw === w && nh === h && nd === D) return
+    D = nd; w = nw; h = nh
     canvas.width = Math.round(w * D)
     canvas.height = Math.round(h * D)
     gl.viewport(0, 0, canvas.width, canvas.height)
   }
 
-  const publish = (cov: number) => {
-    if (Math.abs(cov - lastCov) < 0.004 && cov !== 0 && cov !== 1) return
-    lastCov = cov
-    const k = smooth(clamp((cov - 0.45) / 0.2, 0, 1)) // text flips to dark ink as the cloud passes
+  // uIn: cloud rising in (0..1). uOut: cloud leaving through the top (0..1).
+  const publish = (uIn: number, uOut: number) => {
+    const key = uIn.toFixed(3) + uOut.toFixed(3)
+    if (key === lastKey) return
+    lastKey = key
+    const cov = uIn * (1 - uOut)
+    const faqK = smooth(clamp((uIn - 0.45) / 0.2, 0, 1)) * (1 - smooth(clamp((uOut - 0.75) / 0.15, 0, 1)))
+    const topK = smooth(clamp((uIn - 0.82) / 0.14, 0, 1)) * (1 - smooth(clamp((uOut - 0.82) / 0.14, 0, 1)))
+    const clK = smooth(clamp((uIn - 0.9) / 0.1, 0, 1)) * (1 - smooth(clamp((uOut - 0.35) / 0.2, 0, 1)))
+    const page = mix(PAGE_DARK, PAGE_LIGHT, cov)
     root.style.setProperty('--cov', cov.toFixed(3))
-    root.style.setProperty('--page', mix(PAGE_DARK, PAGE_LIGHT, cov)) // keeps the scrollbar gutter in step with the cloud
-    root.style.setProperty('--ink', mix(INK_ON, INK_OFF, k))
-    root.style.setProperty('--ink-mut', mix(MUT_ON, MUT_OFF, k))
-    root.style.setProperty('--ink-ln', mix(LN_ON, LN_OFF, k))
-    root.style.setProperty('--ink-dim', mix([74, 74, 80], [140, 140, 150], k))
-    root.style.setProperty('--ink-inv', mix([10, 10, 11], [242, 241, 238], k))
-    root.style.setProperty('--hdr', mix(INK_ON, INK_OFF, smooth(clamp((cov - 0.82) / 0.14, 0, 1)))) // header sits at the top, which the cloud reaches last
+    root.style.setProperty('--top', topK.toFixed(3))
+    root.style.setProperty('--page', page) // keeps the scrollbar gutter in step with the cloud
+    root.style.setProperty('--ink', mix(INK_ON, INK_OFF, faqK))
+    root.style.setProperty('--ink-mut', mix(MUT_ON, MUT_OFF, faqK))
+    root.style.setProperty('--ink-ln', mix(LN_ON, LN_OFF, faqK))
+    root.style.setProperty('--hdr', mix(INK_ON, INK_OFF, topK)) // header sits at the top, which the cloud covers last and leaves last
+    root.style.setProperty('--cl-ink', mix(INK_ON, INK_OFF, clK))
+    root.style.setProperty('--cl-dim', mix([74, 74, 80], [140, 140, 150], clK))
+    root.style.setProperty('--cl-inv', mix([10, 10, 11], [242, 241, 238], clK))
+    root.style.setProperty('--halo', `rgba(10,10,11,${(0.85 * clamp(1 - cov * 2.2, 0, 1)).toFixed(2)})`)
+    meta?.setAttribute('content', mix(PAGE_DARK, PAGE_LIGHT, topK))
   }
 
   const step = (dt: number, t: number, snap: boolean) => {
@@ -285,22 +319,30 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
     const shapeA = SECTION_SHAPES[i] ?? null
     const shapeB = i >= 4 ? null : (SECTION_SHAPES[i + 1] ?? null)
     const hasNext = i < 4
-    // per-dot staggered leave (first half) and arrive (second half) windows
-    const cov = smooth(clamp((f - 2.3) / 0.7, 0, 1)) * (1 - smooth(clamp((f - 3.55) / 0.45, 0, 1)))
-    publish(cov)
+    const uIn = smooth(clamp((f - 2.3) / 0.7, 0, 1))
+    const uOut = smooth(clamp((f - 3.55) / 0.45, 0, 1))
+    publish(uIn, uOut)
 
     const wide = w >= 720
-    const half = Math.min(w, h) * (wide ? 0.19 : 0.22)
+    const half = Math.min(w, h) * (wide ? 0.24 : 0.3)
     const toSection = clamp(f, 0, 1)
     const ccx = wide ? w * 0.2 : 0
     const ccy = (wide ? -h * 0.02 : -h * 0.14) * (1 - toSection)
-    const dim = wide ? 1 : 1 - 0.55 * toSection
+    const dim = wide ? 1 : 1 - 0.2 * toSection
+    const floor = wide ? 0.14 : 0.28 // dot brightness left behind text
     const dScroll = scrollY - lastScroll
     lastScroll = scrollY
     const rotA = rotFor(shapeA, t, mx, my), rotB = rotFor(shapeB, t, mx, my)
     const R = touching ? 90 : 120
+    const zones: Array<[number, number, number, number]> = []
+    for (const el of quiet) {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0 && r.bottom > -40 && r.top < h + 40) zones.push([r.left, r.top, r.right, r.bottom])
+    }
     let o = 0
-    for (const d of dots) {
+    for (let di = 0; di < active; di++) {
+      const d = dots[di]
+      if (!d) continue
       const outQ = hasNext ? smooth(clamp((frac - d.delay * 0.2) / 0.3, 0, 1)) : 0
       const inQ = hasNext ? smooth(clamp((frac - 0.5 - d.delay * 0.2) / 0.3, 0, 1)) : 0
       const wA = shapeA === null ? 0 : 1 - outQ
@@ -316,7 +358,7 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
         tx += (ccx + tmp[0] * half) * wB; ty += (ccy + tmp[1] * half) * wB; tz += tmp[2] * half * wB
       }
       tx += (d.u - 0.5) * w * wS; ty += (d.v - 0.5) * h * wS; tz += d.sz * wS
-      const a = d.amp * (1 + wS * 1.6), s = Math.sin(t * d.w + d.ph), co = Math.cos(t * d.w + d.ph)
+      const a = d.amp * (0.35 + wS * 1.25), s = Math.sin(t * d.w + d.ph), co = Math.cos(t * d.w + d.ph)
       if (d.type === 0) { tx += co * a; ty += s * a }
       else if (d.type === 1) { ty += s * a }
       else if (d.type === 2) { tx += s * a; ty += Math.sin(2 * t * d.w + d.ph2) * a * 0.7; tz += co * a }
@@ -342,12 +384,20 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
       d.sx = w / 2 + (d.x - mx * 45) * persp
       d.sy = h / 2 + (d.y - my * 30) * persp
       const depth = clamp(1 - (d.z + 250) / 500, 0, 1)
+      let quietF = 1
+      for (const z of zones) {
+        const ex = Math.max(z[0] - d.sx, 0, d.sx - z[2]), ey = Math.max(z[1] - d.sy, 0, d.sy - z[3])
+        quietF = Math.min(quietF, 1 - (1 - clamp(Math.hypot(ex, ey) / 36, 0, 1)) * (1 - floor))
+      }
+      const bright = wA * (BRIGHT[shapeA ?? 0] ?? 1) + wB * (BRIGHT[shapeB ?? 0] ?? 1) + wS * 0.55
+      const twinkle = 0.88 + 0.12 * Math.sin(t * d.w * 2 + d.ph2)
       out[o++] = d.sx * D
       out[o++] = d.sy * D
-      out[o++] = clamp(1.7 * persp, 1, 3.4) * D
-      out[o++] = (0.25 + depth * 0.75) * (1 - 0.35 * wS) * dim
+      out[o++] = clamp(2.3 * persp * d.sv, 1.5, 5) * 3.1 * D
+      out[o++] = (0.3 + depth * 0.7) * bright * dim * quietF * twinkle
+      out[o++] = depth
     }
-    if (cov >= 0.999) {
+    if (uIn >= 0.999 && uOut <= 0.001) {
       gl.clearColor(0.9, 0.9, 0.91, 1) // fully inside the cloud
       gl.clear(gl.COLOR_BUFFER_BIT)
       return
@@ -359,12 +409,15 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
     gl.bindVertexArray(dotVao)
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, out)
-    gl.drawArrays(gl.POINTS, 0, dots.length)
-    if (cov > 0.002) {
+    gl.blendFunc(gl.ONE, gl.ONE) // glows add up
+    gl.drawArrays(gl.POINTS, 0, active)
+    if (uIn > 0.002 && uOut < 0.998) {
       gl.useProgram(cloudProg) // the cloud is drawn over the dots, so it swallows them
       gl.uniform2f(cloudRes, canvas.width, canvas.height)
       gl.uniform1f(cloudT, t)
-      gl.uniform1f(cloudCov, cov)
+      gl.uniform1f(cloudIn, uIn)
+      gl.uniform1f(cloudOut, uOut)
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
       gl.bindVertexArray(cloudVao)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
@@ -373,6 +426,13 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
   const frame = (ms: number) => {
     const dt = Math.min((ms - last) / 1000 || 0.016, 1 / 15)
     last = ms
+    if (++frames > 30) { // after warm-up, shed dots if the device can't keep up
+      accDt += dt
+      if (frames % 90 === 0) {
+        if (accDt / 90 > 1 / 38 && active > minActive) active = Math.max(minActive, Math.floor(active * 0.75))
+        accDt = 0
+      }
+    }
     mx += (tmx - mx) * (1 - Math.exp(-4 * dt))
     my += (tmy - my) * (1 - Math.exp(-4 * dt))
     step(dt, ms / 1000, false)
@@ -390,12 +450,14 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
   }
   const onLeave = () => { px = py = -9999; tmx = tmy = 0 }
   const onResize = () => { resize(); if (reduced) still() }
+  const onVisible = () => { last = performance.now() }
 
   resize()
   for (const d of dots) {
     d.x = (d.u - 0.5) * w; d.y = (d.v - 0.5) * h; d.z = d.sz // start scattered, then assemble
   }
   addEventListener('resize', onResize)
+  document.addEventListener('visibilitychange', onVisible)
   if (reduced) {
     addEventListener('scroll', still, { passive: true })
     still()
@@ -417,6 +479,8 @@ export function createScene(canvas: HTMLCanvasElement): Scene | null {
       removeEventListener('pointerup', onLeave)
       removeEventListener('pointercancel', onLeave)
       document.removeEventListener('mouseleave', onLeave)
+      document.removeEventListener('visibilitychange', onVisible)
+      meta?.setAttribute('content', '#0a0a0b')
       CSS_VARS.forEach((v) => root.style.removeProperty(v))
       gl.getExtension('WEBGL_lose_context')?.loseContext()
     },

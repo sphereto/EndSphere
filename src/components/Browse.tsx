@@ -32,7 +32,12 @@ export default function Browse() {
         </div>
         <div className="mo">{shown.length} {shown.length === 1 ? 'plugin' : 'plugins'}</div>
         <div className="grid">
-          {shown.length === 0 && <p className="mo">No plugins match.</p>}
+          {shown.length === 0 && (
+            <div>
+              <p className="mo" style={{ marginBottom: 16 }}>No plugins match.</p>
+              <button className="chip" onClick={() => { setQ(''); setLang('All'); setLetter('') }}>Clear filters</button>
+            </div>
+          )}
           {shown.map((p) => (
             <article className="card" key={p.name}>
               <div className="th" aria-hidden="true">{letterOf(p)}</div>
