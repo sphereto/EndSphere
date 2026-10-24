@@ -1,5 +1,6 @@
 import { plugins } from '../data/plugins'
 import { NavLink } from '../router'
+import DotField from './DotField'
 
 const FAQ: ReadonlyArray<readonly [string, string]> = [
   ['How do I install a plugin?', 'Download the latest release from the plugin’s GitHub page and drop it into your server’s plugins folder, then restart. Each README has the exact steps.'],
@@ -20,6 +21,7 @@ const Heading = ({ title, sub }: { title: string; sub: string }) => (
 export default function Home() {
   return (
     <main id="home">
+      <DotField />
       <section className="hero">
         <div className="w">
           <h1>EndSphere.</h1>

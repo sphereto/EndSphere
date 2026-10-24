@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- WebGL2 dot field on Home: about 1,000 white dots (600 on phones) forming a wireframe cube. Each dot has its own drift, spring and scroll inertia; the pointer pushes dots away and they return, with mouse parallax.
+- Scrolling scatters the dots into the endstone texture pattern (patches dense, cracks empty) and they reform into the cube when you scroll back up.
+- Reduced-motion fallback (still frame) and graceful skip without WebGL2.
+
 ### Changed
 - Browse now lives at a real path (`/EndSphere/browse/`) instead of a `#hash`; the build pre-renders it with its own page title.
 - Smaller hero title and subtitle; the logo is plain "EndSphere".
@@ -18,7 +23,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A–Z strip wrapping into five rows on phones; it scrolls sideways instead.
 
 ### Removed
-- The dotted-sphere hero animation.
+- The earlier 2D dotted-sphere hero animation.
 
 ## [0.1.0] - 2026-10-23
 

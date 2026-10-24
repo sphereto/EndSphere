@@ -2,7 +2,7 @@
 
 A free storefront for Endstone plugins: browse and preview them, then download the latest release straight from GitHub.
 
-Built with React, TypeScript (strict) and Vite. The WebGL scene in `src/webgl/scene.ts` is a stub (TODO) and is not rendered yet.
+Built with React, TypeScript (strict) and Vite. The Home page has a WebGL2 dot field (`src/webgl/scene.ts`): a wireframe cube made of white dots that you can disturb with the pointer, which scatters into the endstone-texture pattern (`src/webgl/endstoneMask.ts`) as you scroll. It shows a still frame with reduced motion and is skipped if WebGL2 is unavailable. The next section shapes are still to come.
 
 ## Getting started
 
