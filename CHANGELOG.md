@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Living-swarm motion: shared curl currents, dots that travel along edges, cursor that parts the swarm, click/tap shockwave, scroll wind.
 
 ### Changed
+- Shapes are now clearly visible: a thick "chunky glow" line of bright dots with a layer of fine complementary dots around it (fine, glowing, fine). Dots behind text now dim less.
 - FAQ cloud is slower and calmer: speed-limited (about two seconds in each direction even after a hard flick), starts as a dim violet-grey and brightens as it covers, and scroll snapping is off around it.
 - FAQ text slides in from the left with the cloud and slides out to the right as it leaves.
 

@@ -28,6 +28,8 @@ interface Dot {
   rim: number // 0 = core of the shape, 1 = outer fuzz (violet)
   w: number; ph: number; ph2: number
   delay: number; inertia: number; sv: number
+  core: boolean // true = thick glowing line dot, false = fine complementary dot around it
+  o0: number; o1: number; o2: number // offset from the line (unit space) for complementary dots
   sx: number; sy: number // last screen position
 }
 interface Star { x: number; y: number; z: number }
@@ -37,11 +39,11 @@ in vec4 a; in float b; in float c; uniform vec2 u_res; out float v_a; out float 
 void main(){ vec2 p = a.xy / u_res * 2.0 - 1.0; gl_Position = vec4(p.x, -p.y, 0.0, 1.0); gl_PointSize = a.z; v_a = a.w; v_d = b; v_r = c; }`
 // Glowing sprite: bright core, soft halo, violet rim on outer particles, fine grain. Additive, so dense areas become fuzzy clouds.
 const DOT_FS = `#version 300 es
-precision mediump float; in float v_a; in float v_d; in float v_r; out vec4 o;
+precision mediump float; in float v_a; in float v_d; in float v_r; out vec4 o; uniform float u_co, u_gl, u_k;
 void main(){
   float r = length(gl_PointCoord - 0.5) * 2.0;
-  float core = smoothstep(0.34, 0.1, r);
-  float glow = exp(-r * r * 4.5) * 0.6;
+  float core = smoothstep(u_co, u_co * 0.35, r);
+  float glow = exp(-r * r * u_k) * u_gl;
   float g = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
   float i = clamp((core + glow) * v_a * (0.9 + 0.2 * g), 0.0, 1.0) * step(r, 1.0);
   vec3 col = mix(vec3(0.86, 0.86, 0.94), vec3(0.62, 0.40, 1.0), v_r * 0.9);
@@ -164,7 +166,8 @@ function letterEEdges(): Edge[] {
   return edges
 }
 
-function buildDots(n: number): Dot[] {
+function buildDots(nCore: number, nSat: number): Dot[] {
+  const n = nCore + nSat
   const cells: Array<[number, number]> = []
   const on = (i: number, j: number) => ENDSTONE_MASK[j]?.charAt(i) === '1'
   ENDSTONE_MASK.forEach((row, j) => {
@@ -175,7 +178,9 @@ function buildDots(n: number): Dot[] {
   const dots: Dot[] = []
   for (let i = 0; i < n; i++) {
     const cell = cells[Math.floor(Math.random() * cells.length)] ?? [16, 16]
-    const rim = Math.random() ** 1.6
+    const core = i < nCore
+    const rim = core ? Math.random() ** 2 * 0.5 : 0.5 + Math.random() * 0.5
+    const az = rand(0, 6.283), pol = Math.acos(rand(-1, 1)), rad = core ? 0 : rand(0.045, 0.13)
     dots.push({
       seg: [cube[i] ?? null, bip[i] ?? null, null, letter[i] ?? null],
       au: rand(0, Math.PI * 2), av: rand(-Math.PI / 2, Math.PI / 2),
@@ -184,10 +189,11 @@ function buildDots(n: number): Dot[] {
       u: (cell[0] + Math.random()) / 32, v: (cell[1] + Math.random()) / 32, sz: rand(-220, 220),
       x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
       k: rand(10, 26), c: rand(3.5, 6.5), rim, w: rand(0.4, 1.4), ph: rand(0, 6.283), ph2: rand(0, 6.283),
-      delay: Math.random(), inertia: rand(0.2, 1), sv: rand(0.8, 1.25), sx: 0, sy: 0,
+      delay: Math.random(), inertia: rand(0.2, 1), sv: core ? rand(0.9, 1.15) : rand(0.8, 1.3),
+      core, o0: Math.sin(pol) * Math.cos(az) * rad, o1: Math.sin(pol) * Math.sin(az) * rad, o2: Math.cos(pol) * rad, sx: 0, sy: 0,
     })
   }
-  return shuffle(dots) && dots
+  return dots // core dots first, complementary dots after
 }
 
 /* ---------- orientation and shape position ---------- */
@@ -263,7 +269,8 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
   const nebula = createNebula(nebulaCanvas, small ? 0.4 : 0.5)
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
   const fresh = boot.phase === 'loading' // first load: hold a spiral behind the curtain, then build the cube
-  const dots = buildDots(small ? 1500 : 3500)
+  const nCore = small ? 800 : 1800, nSat = small ? 900 : 2200
+  const dots = buildDots(nCore, nSat)
   const stars: Star[] = Array.from({ length: small ? 700 : 1400 }, () => ({ x: rand(-1.2, 1.2), y: rand(-1.2, 1.2), z: rand(0.08, 1) }))
   const dotOut = new Float32Array(dots.length * STRIDE)
   const starOut = new Float32Array(stars.length * 3 * STRIDE)
@@ -271,9 +278,9 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
   const root = document.documentElement
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
   const quiet = Array.from(document.querySelectorAll<HTMLElement>(QUIET))
-  const minActive = Math.floor(dots.length * 0.4)
 
   const uDotRes = gl.getUniformLocation(dotProg, 'u_res')
+  const uCo = gl.getUniformLocation(dotProg, 'u_co'), uGl = gl.getUniformLocation(dotProg, 'u_gl'), uK = gl.getUniformLocation(dotProg, 'u_k')
   const uCloudRes = gl.getUniformLocation(cloudProg, 'u_res'), uCloudT = gl.getUniformLocation(cloudProg, 'u_t')
   const uCloudIn = gl.getUniformLocation(cloudProg, 'u_in'), uCloudOut = gl.getUniformLocation(cloudProg, 'u_out')
   const layout = (vao: WebGLVertexArrayObject, buf: WebGLBuffer, bytes: number) => {
@@ -291,7 +298,7 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
   gl.bindVertexArray(null)
   gl.enable(gl.BLEND)
 
-  let active = dots.length, accDt = 0, frames = 0, w = 0, h = 0, D = 1, raf = 0, last = 0, lastScroll = scrollY, lastKey = ''
+  let aCore = nCore, aSat = nSat, accDt = 0, frames = 0, w = 0, h = 0, D = 1, raf = 0, last = 0, lastScroll = scrollY, lastKey = ''
   let mx = 0, my = 0, tmx = 0, tmy = 0, px = -9999, py = -9999, touching = false
   let uIn = 0, uOut = 0, flight = 0, boost = 0, tNow = 0
   let shock: { x: number; y: number; t: number } | null = null
@@ -353,7 +360,7 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
     const ccx = wide ? w * 0.2 : 0
     const ccy = (wide ? -h * 0.02 : -h * 0.14) * (1 - toSection)
     const dim = wide ? 1 : 1 - 0.2 * toSection
-    const floor = wide ? 0.14 : 0.28
+    const floor = wide ? 0.32 : 0.45 // dot brightness left behind text
     const dScroll = scrollY - lastScroll
     lastScroll = scrollY
     const vel = dt > 0 ? Math.abs(dScroll) / dt : 0
@@ -404,8 +411,9 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
     let o = 0
     const flowA = (wS: number) => 0.3 + 0.8 * wS + 1.2 * 4 * wS * (1 - wS)
     const cr = Math.cos(t * 0.025), sr = Math.sin(t * 0.025)
-    for (let di = 0; di < active; di++) {
-      const d = dots[di]
+    const total = aCore + aSat
+    for (let di = 0; di < total; di++) {
+      const d = dots[di < aCore ? di : nCore + (di - aCore)] // thick line dots first, then complementary dots
       if (!d) continue
       const outQ = hasNext ? smooth(clamp((frac - d.delay * 0.2) / 0.3, 0, 1)) : 0
       const inQ = hasNext ? smooth(clamp((frac - 0.5 - d.delay * 0.2) / 0.3, 0, 1)) : 0
@@ -426,8 +434,10 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
         tx += (ux * cr - uy * sr) * wS; ty += (ux * sr + uy * cr) * wS; tz += d.sz * wS
         pulse += wS * 0.9
       }
-      // the swarm breathes: orbit radius grows with the outer fuzz
-      const amp = (2 + d.rim * 13) * (0.45 + wS * 1.1)
+      const shaped = 1 - wS // complementary dots sit in a shell around the line
+      tx += d.o0 * half * shaped; ty += d.o1 * half * shaped; tz += d.o2 * half * shaped
+      // the swarm breathes: orbit radius grows with the outer fuzz; the core line stays crisper
+      const amp = (d.core ? 1.5 + d.rim * 6 : 2 + d.rim * 10) * (0.45 + wS * 1.1)
       tx += Math.cos(t * d.w + d.ph) * amp; ty += Math.sin(t * d.w + d.ph2) * amp
       if (intro < 1) { // opening build: a spinning 3D spiral that tightens into the cube
         const q = smooth(clamp((intro - d.delay * 0.3) / 0.7, 0, 1))
@@ -470,13 +480,13 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
       let quietF = 1
       for (const z of zones) {
         const ex = Math.max(z[0] - d.sx, 0, d.sx - z[2]), ey = Math.max(z[1] - d.sy, 0, d.sy - z[3])
-        quietF = Math.min(quietF, 1 - (1 - clamp(Math.hypot(ex, ey) / 36, 0, 1)) * (1 - floor))
+        quietF = Math.min(quietF, 1 - (1 - clamp(Math.hypot(ex, ey) / 28, 0, 1)) * (1 - floor))
       }
       const bright = wA * (BRIGHT[shapeA ?? 0] ?? 1) + wB * (BRIGHT[shapeB ?? 0] ?? 1) + wS * 0.55
       dotOut[o++] = d.sx * D
       dotOut[o++] = d.sy * D
-      dotOut[o++] = clamp(1.7 * persp * d.sv, 1.2, 3.6) * 3.1 * D
-      dotOut[o++] = (0.2 + depth * 0.5) * bright * dim * quietF * pulse * (0.9 + 0.1 * Math.sin(t * d.w * 2 + d.ph2)) * (intro < 1 ? 0.6 + 0.4 * intro : 1)
+      dotOut[o++] = (d.core ? (4.6 / 0.3) * persp * d.sv : (1.8 / 0.34) * persp * d.sv) * D
+      dotOut[o++] = (d.core ? 0.9 * (0.35 + 0.65 * depth) : 0.75 * (0.3 + 0.7 * depth)) * bright * dim * quietF * pulse * (0.9 + 0.1 * Math.sin(t * d.w * 2 + d.ph2)) * (intro < 1 ? 0.6 + 0.4 * intro : 1)
       dotOut[o++] = depth
       dotOut[o++] = d.rim
     }
@@ -491,6 +501,7 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
     gl.useProgram(dotProg)
     gl.uniform2f(uDotRes, canvas.width, canvas.height)
     gl.blendFunc(gl.ONE, gl.ONE) // glows add up, so dense areas turn into soft clouds
+    gl.uniform1f(uCo, 0.34); gl.uniform1f(uGl, 0.6); gl.uniform1f(uK, 4.5) // fine style: stars and complementary dots
     gl.bindVertexArray(starVao)
     gl.bindBuffer(gl.ARRAY_BUFFER, starBuf)
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, starOut)
@@ -498,7 +509,9 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
     gl.bindVertexArray(dotVao)
     gl.bindBuffer(gl.ARRAY_BUFFER, dotBuf)
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, dotOut)
-    gl.drawArrays(gl.POINTS, 0, active)
+    gl.drawArrays(gl.POINTS, aCore, aSat)
+    gl.uniform1f(uCo, 0.3); gl.uniform1f(uGl, 0.9); gl.uniform1f(uK, 3.2) // chunky glow style: the thick line
+    gl.drawArrays(gl.POINTS, 0, aCore)
     if (uIn > 0.002 && uOut < 0.998) {
       gl.useProgram(cloudProg) // the cloud is drawn over the swarm, so it swallows it
       gl.uniform2f(uCloudRes, canvas.width, canvas.height)
@@ -521,7 +534,10 @@ export function createScene(canvas: HTMLCanvasElement, nebulaCanvas: HTMLCanvasE
     if (frames > 60) { // after warm-up, shed particles if the device can't keep up
       accDt += dt
       if (frames % 90 === 0) {
-        if (accDt / 90 > 1 / 38 && active > minActive) active = Math.max(minActive, Math.floor(active * 0.75))
+        if (accDt / 90 > 1 / 38) { // slow device: shed the complementary dots first, then thin the line
+          if (aSat > nSat * 0.2) aSat = Math.floor(aSat * 0.7)
+          else if (aCore > nCore * 0.6) aCore = Math.floor(aCore * 0.85)
+        }
         accDt = 0
       }
     }
