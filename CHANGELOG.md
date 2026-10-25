@@ -5,6 +5,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-25
+
+### Added
+- Loading screen: glinting tagline, then two flat curtain halves slide apart. Shown on every full load, including direct `/browse/` visits. Scroll, keys, focus and pointer are locked until the curtain is halfway open.
+- Opening build: a spinning 3D spiral of particles tightens into the cube as the curtain opens. Full loads always start at the top of Home.
+- Space background: a violet nebula and star dust that fly toward you. The cursor steers the flight and swirls the clouds, and scrolling speeds it up and stretches the stars.
+- Dense, fuzzy particle shapes (about 3,500 on desktop, 1,500 on phones) with violet rims, grain and a travelling pulse of light along the edges.
+- Living-swarm motion: shared curl currents, dots that travel along edges, cursor that parts the swarm, click/tap shockwave, scroll wind.
+
+### Changed
+- FAQ cloud is slower and calmer: speed-limited (about two seconds in each direction even after a hard flick), starts as a dim violet-grey and brightens as it covers, and scroll snapping is off around it.
+- FAQ text slides in from the left with the cloud and slides out to the right as it leaves.
+
+### Removed
+- The giant "ENDSPHERE" watermark behind About.
+
+
 ## [0.2.0] - 2026-10-24
 
 ### Added
@@ -47,6 +64,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Burger menu, weak scroll snapping and a footer that slides over the pinned closing screen.
 - Repo standards: README, MIT license, CI, Dependabot, issue and PR templates, CONTRIBUTING, SECURITY, CODEOWNERS.
 
-[Unreleased]: https://github.com/sphereto/endsphere/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/sphereto/endsphere/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/sphereto/endsphere/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sphereto/endsphere/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sphereto/endsphere/releases/tag/v0.1.0

@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { createScene } from '../webgl/scene'
 
-/** Fixed full-viewport WebGL canvas behind the Home page. Renders nothing if WebGL2 is unavailable. */
+/** Fixed full-viewport WebGL layers behind the Home page: a low-res nebula canvas and the particle/cloud canvas. */
 export default function DotField() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  const [gen, setGen] = useState(0) // bump to mount a fresh canvas after the GPU context is lost
+  const dots = useRef<HTMLCanvasElement>(null)
+  const nebula = useRef<HTMLCanvasElement>(null)
+  const [gen, setGen] = useState(0) // bump to mount fresh canvases after the GPU context is lost
   useEffect(() => {
-    const cv = ref.current
-    if (!cv) return
-    const scene = createScene(cv)
+    const cv = dots.current, nb = nebula.current
+    if (!cv || !nb) return
+    const scene = createScene(cv, nb)
     const onLost = (e: Event) => {
       e.preventDefault()
       setGen((g) => g + 1)
@@ -19,5 +20,10 @@ export default function DotField() {
       scene?.dispose()
     }
   }, [gen])
-  return <canvas className="dots" key={gen} ref={ref} aria-hidden="true" />
+  return (
+    <div key={gen} aria-hidden="true">
+      <canvas className="nebula" ref={nebula} />
+      <canvas className="dots" ref={dots} />
+    </div>
+  )
 }

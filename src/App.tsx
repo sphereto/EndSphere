@@ -3,6 +3,8 @@ import Browse from './components/Browse'
 import Header from './components/Header'
 import Home from './components/Home'
 import NotFound from './components/NotFound'
+import Loader from './components/Loader'
+import { useBootPhase } from './boot'
 import { useReveal } from './hooks'
 import { scrollToSection, takePendingSection, useRoute } from './router'
 
@@ -10,6 +12,8 @@ export default function App() {
   const route = useRoute()
   const [menu, setMenu] = useState(false)
   const first = useRef(true)
+  const phase = useBootPhase()
+  const needsScene = useRef(route === 'home')
 
   useEffect(() => {
     setMenu(false)
@@ -31,12 +35,19 @@ export default function App() {
     return () => removeEventListener('keydown', onKey)
   }, [menu])
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('booting', phase !== 'live')
+  }, [phase])
+
   useReveal(route)
 
   return (
     <>
-      <Header open={menu} onToggle={() => setMenu((m) => !m)} onClose={() => setMenu(false)} />
-      {route === 'browse' ? <Browse /> : route === 'notfound' ? <NotFound /> : <Home />}
+      <div inert={phase !== 'live'}>
+        <Header open={menu} onToggle={() => setMenu((m) => !m)} onClose={() => setMenu(false)} />
+        {route === 'browse' ? <Browse /> : route === 'notfound' ? <NotFound /> : <Home />}
+      </div>
+      <Loader needsScene={needsScene.current} />
     </>
   )
 }

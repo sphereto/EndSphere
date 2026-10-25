@@ -7,6 +7,9 @@ import '@fontsource/jetbrains-mono/latin-400.css'
 import App from './App'
 import './styles.css'
 
+history.scrollRestoration = 'manual' // every full load starts at the top
+scrollTo(0, 0)
+
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing #root element')
 createRoot(root).render(

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { plugins } from '../data/plugins'
 import { NavLink } from '../router'
 import DotField from './DotField'
@@ -11,8 +12,8 @@ const FAQ: ReadonlyArray<readonly [string, string]> = [
   ['How can I get in touch?', 'Message @sphereto on Discord, or open an issue on GitHub.'],
 ]
 
-const Heading = ({ title, sub }: { title: string; sub: string }) => (
-  <div className="hd2 rv">
+const Heading = ({ title, sub, faq }: { title: string; sub: string; faq?: boolean }) => (
+  <div className={faq ? 'hd2' : 'hd2 rv'} style={faq ? ({ '--i': 0 } as CSSProperties) : undefined}>
     <h2>{title}</h2>
     <p><i />{sub}<i /></p>
   </div>
@@ -46,7 +47,6 @@ export default function Home() {
       </section>
 
       <section className="sec side" id="about">
-        <div className="big" aria-hidden="true">ENDSPHERE</div>
         <div className="w">
           <Heading title="About." sub="what this is" />
           <div className="ab rv">
@@ -59,10 +59,10 @@ export default function Home() {
 
       <section className="sec" id="faq">
         <div className="w" style={{ maxWidth: 860 }}>
-          <Heading title="FAQ." sub="good to know" />
-          <div className="rv">
+          <Heading title="FAQ." sub="good to know" faq />
+          <div>
             {FAQ.map(([q, a], i) => (
-              <details key={q} open={i === 0}><summary>{q}</summary><p>{a}</p></details>
+              <details key={q} open={i === 0} style={{ '--i': i + 1 } as CSSProperties}><summary>{q}</summary><p>{a}</p></details>
             ))}
           </div>
         </div>
